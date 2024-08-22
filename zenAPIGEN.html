@@ -1,0 +1,329 @@
+<html><head><base href="https://zenai.biz"><title>ZEN AI API Generator</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-json.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-markup.min.js"></script>
+<style>
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  .loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #ffffff;
+    animation: pulse 1s infinite;
+  }
+  body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f0f4f8;
+    color: #333;
+  }
+  .zen-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+  .zen-header {
+    background-color: #4a5568;
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+  }
+  .zen-button {
+    background-color: #48bb78;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.3s ease;
+  }
+  .zen-button:hover {
+    background-color: #38a169;
+  }
+  .zen-input {
+    border: 1px solid #cbd5e0;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    width: 100%;
+  }
+  .zen-card {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+</style>
+</head><body>
+
+<div class="zen-container">
+  <header class="zen-header">
+    <h1 class="text-3xl font-bold">ZEN AI API Generator</h1>
+    <p class="mt-2">Empower your ZEN experience with custom AI APIs</p>
+  </header>
+
+  <div class="zen-card">
+    <button id="guide-toggle" class="zen-button w-full">How to Use ZEN AI API Generator (Click to Expand)</button>
+    <div id="guide-content" class="hidden mt-4">
+      <ol class="list-decimal list-inside space-y-2">
+        <li><strong>Describe Your API:</strong> Enter a description of the API you want to create.</li>
+        <li><strong>Generate:</strong> Click the "Generate ZEN API" button to create your custom API.</li>
+        <li><strong>Test:</strong> Use the provided tester to ensure your API works as expected.</li>
+        <li><strong>Refine:</strong> Use the API Enhancer to add more capabilities if needed.</li>
+        <li><strong>Implement:</strong> Copy the API details and integrate them into your ZEN projects.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="zen-card">
+    <h3 class="text-xl font-semibold text-green-600 mb-4">Create Your ZEN AI API</h3>
+    <form id="api-doc-generator-form">
+      <textarea id="api-description" class="zen-input mb-4" placeholder="Describe the ZEN API endpoint you want (e.g., 'Create an API that generates personalized meditation scripts')" required></textarea>
+      <textarea id="added-context" class="zen-input mb-4" placeholder="(Optional) Add any additional ZEN-specific context or details"></textarea>
+      <button type="submit" class="zen-button">Generate ZEN API <span class="loading hidden"></span></button>
+    </form>
+    <div id="api-doc-result" class="mt-4 p-4 bg-gray-100 rounded hidden"></div>
+  </div>
+
+  <div id="generated-endpoint"></div>
+
+  <div class="zen-card">
+    <h3 class="text-xl font-semibold text-green-600 mb-4">ZEN API Enhancer</h3>
+    <p class="mb-4">Want to expand your ZEN API's capabilities? Describe the enhancements below.</p>
+    <form id="api-enhancer-form">
+      <textarea id="api-enhancements" class="zen-input mb-4" placeholder="Describe how you want to enhance the API (e.g., 'Add support for different meditation styles' or 'Include background music recommendations')" required></textarea>
+      <button type="submit" class="zen-button">Enhance ZEN API <span class="loading hidden"></span></button>
+    </form>
+    <div id="api-enhancer-result" class="mt-4 p-4 bg-gray-100 rounded hidden"></div>
+  </div>
+</div>
+
+<script>
+const apiCall = async (endpoint, data, acceptHeader) => {
+  try {
+    const response = await fetch(`/api/${endpoint}`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json', 
+        'Accept': acceptHeader 
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    
+    if (acceptHeader === 'application/json') {
+      return await response.json();
+    } else {
+      return await response.text();
+    }
+  } catch (error) {
+    console.error('API call failed:', error);
+    throw error;
+  }
+};
+
+const createAPIDetailsElement = (apiDetails) => {
+  const container = document.createElement('div');
+  container.className = 'zen-card';
+  
+  container.innerHTML = `
+    <h3 class="text-xl font-semibold text-green-600 mb-4"><span class="font-bold text-red-500">${apiDetails.method}</span> <span class="text-green-500">/api/${apiDetails.endpoint}</span></h3>
+    <p class="mb-4">${apiDetails.description}</p>
+    <h4 class="font-semibold mb-2">Overview:</h4>
+    <p class="mb-4">${apiDetails.overview}</p>
+    <h4 class="font-semibold mb-2">Input:</h4>
+    <p class="mb-4">This ZEN API accepts both structured parameters and free-form text. The system will interpret your input contextually.</p>
+    <pre class="bg-gray-100 p-4 rounded overflow-x-auto mb-4"><code class="language-json">${JSON.stringify(apiDetails.inputExample, null, 2)}</code></pre>
+    <h4 class="font-semibold mb-2">Output:</h4>
+    <p class="mb-4">The API returns a response tailored to your input and the ZEN context. Here's a sample output:</p>
+    <pre class="bg-gray-100 p-4 rounded overflow-x-auto mb-4"><code class="language-json">${JSON.stringify(apiDetails.outputExample, null, 2)}</code></pre>
+    <div class="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-4 rounded">
+      <p class="font-bold">Important: Accept Header</p>
+      <p>This API requires the Accept header to be explicitly set to one of the following:</p>
+      <ul class="list-disc list-inside ml-4 mt-2">
+        <li>text/plain</li>
+        <li>text/html</li>
+        <li>application/json</li>
+      </ul>
+      <p class="mt-2">The response format will vary based on the Accept header you choose.</p>
+    </div>
+    <div class="bg-green-100 border-l-4 border-green-500 p-4 mb-4 rounded">This ZEN API adapts to your input and the ZEN context, providing relevant responses based on the Accept header.</div>
+    ${apiDetails.addedContext ? `<div class="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-4 rounded italic">Additional ZEN Context: ${apiDetails.addedContext}</div>` : ''}
+  `;
+
+  const copyButton = document.createElement('button');
+  copyButton.textContent = 'Copy ZEN API Details';
+  copyButton.className = 'zen-button mt-4';
+  copyButton.onclick = () => {
+    navigator.clipboard.writeText(container.textContent)
+      .then(() => {
+        copyButton.textContent = 'Copied!';
+        setTimeout(() => copyButton.textContent = 'Copy ZEN API Details', 2000);
+      })
+      .catch(err => console.error('Failed to copy text: ', err));
+  };
+  container.appendChild(copyButton);
+
+  Prism.highlightAllUnder(container);
+
+  return container;
+};
+
+const createEndpointTester = (apiDetails) => {
+  const container = document.createElement('div');
+  container.className = 'zen-card';
+  
+  container.innerHTML = `
+    <h4 class="text-xl font-semibold text-green-600 mb-4">Test ZEN API Endpoint</h4>
+    <div class="bg-green-100 border-l-4 border-green-500 p-4 mb-4 rounded">This ZEN API can handle both structured input and free-form text. Feel free to experiment!</div>
+    <form class="endpoint-tester-form">
+      <textarea name="api_input" placeholder="Enter your ZEN query or structured input here" class="zen-input mb-4" required></textarea>
+      <div class="mb-4">
+        <label for="accept-header" class="block mb-2">Select Accept Header:</label>
+        <select name="accept_header" id="accept-header" class="zen-input">
+          <option value="application/json">application/json</option>
+          <option value="text/plain">text/plain</option>
+          <option value="text/html">text/html</option>
+        </select>
+      </div>
+      <button type="submit" class="zen-button">Send ZEN Request <span class="loading hidden"></span></button>
+    </form>
+    <div class="result mt-4 p-4 bg-gray-100 rounded hidden"></div>
+    <div class="html-preview mt-4 p-4 bg-white border rounded hidden"></div>
+  `;
+
+  container.querySelector('form').onsubmit = async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    const loadingSpinner = submitButton.querySelector('.loading');
+    const resultDiv = container.querySelector('.result');
+    const htmlPreviewDiv = container.querySelector('.html-preview');
+    
+    submitButton.disabled = true;
+    loadingSpinner.classList.remove('hidden');
+
+    try {
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+      const acceptHeader = data.accept_header;
+      delete data.accept_header;
+
+      const result = await apiCall(apiDetails.endpoint, data, acceptHeader);
+
+      resultDiv.innerHTML = '';
+      htmlPreviewDiv.classList.add('hidden');
+
+      if (acceptHeader === 'application/json') {
+        const pre = document.createElement('pre');
+        const code = document.createElement('code');
+        code.className = 'language-json';
+        code.textContent = JSON.stringify(result, null, 2);
+        pre.appendChild(code);
+        resultDiv.appendChild(pre);
+        Prism.highlightElement(code);
+      } else if (acceptHeader === 'text/html') {
+        const pre = document.createElement('pre');
+        const code = document.createElement('code');
+        code.className = 'language-markup';
+        code.textContent = result;
+        pre.appendChild(code);
+        resultDiv.appendChild(pre);
+        Prism.highlightElement(code);
+
+        htmlPreviewDiv.innerHTML = result;
+        htmlPreviewDiv.classList.remove('hidden');
+      } else {
+        resultDiv.textContent = result;
+      }
+
+      resultDiv.classList.remove('hidden');
+    } catch (error) {
+      resultDiv.textContent = `Error: ${error.message}`;
+      resultDiv.classList.remove('hidden');
+      htmlPreviewDiv.classList.add('hidden');
+    } finally {
+      submitButton.disabled = false;
+      loadingSpinner.classList.add('hidden');
+    }
+  };
+
+  return container;
+};
+
+document.getElementById('api-doc-generator-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const submitButton = this.querySelector('button[type="submit"]');
+  const loadingSpinner = submitButton.querySelector('.loading');
+  
+  submitButton.disabled = true;
+  loadingSpinner.classList.remove('hidden');
+
+  try {
+    const data = {
+      description: document.getElementById('api-description').value,
+      addedContext: document.getElementById('added-context').value
+    };
+    const result = await apiCall('generate_api', data, 'application/json');
+
+    const generatedEndpoint = document.getElementById('generated-endpoint');
+    generatedEndpoint.innerHTML = '';
+    generatedEndpoint.appendChild(createAPIDetailsElement(result));
+    generatedEndpoint.appendChild(createEndpointTester(result));
+
+    document.getElementById('api-doc-result').classList.add('hidden');
+  } catch (error) {
+    const generatedEndpoint = document.getElementById('generated-endpoint');
+    generatedEndpoint.innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
+  } finally {
+    submitButton.disabled = false;
+    loadingSpinner.classList.add('hidden');
+  }
+});
+
+document.getElementById('api-enhancer-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const submitButton = this.querySelector('button[type="submit"]');
+  const loadingSpinner = submitButton.querySelector('.loading');
+  const resultDiv = document.getElementById('api-enhancer-result');
+  
+  submitButton.disabled = true;
+  loadingSpinner.classList.remove('hidden');
+
+  try {
+    const data = {
+      enhancements: document.getElementById('api-enhancements').value
+    };
+    const result = await apiCall('enhance_api', data, 'application/json');
+
+    const generatedEndpoint = document.getElementById('generated-endpoint');
+    generatedEndpoint.innerHTML = '';
+    generatedEndpoint.appendChild(createAPIDetailsElement(result));
+    generatedEndpoint.appendChild(createEndpointTester(result));
+
+    resultDiv.textContent = 'ZEN API enhanced successfully. See updated details above.';
+    resultDiv.classList.remove('hidden');
+  } catch (error) {
+    resultDiv.textContent = `Error: ${error.message}`;
+    resultDiv.classList.remove('hidden');
+  } finally {
+    submitButton.disabled = false;
+    loadingSpinner.classList.add('hidden');
+  }
+});
+
+document.getElementById('guide-toggle').addEventListener('click', function() {
+  const content = document.getElementById('guide-content');
+  content.classList.toggle('hidden');
+  this.textContent = content.classList.contains('hidden') 
+    ? 'How to Use ZEN AI API Generator (Click to Expand)' 
+    : 'How to Use ZEN AI API Generator (Click to Collapse)';
+});
+</script>
+
+</body></html>
